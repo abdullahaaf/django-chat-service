@@ -32,12 +32,17 @@ class MessageHandler(APIView):
         user = self.get_user(request.user.username)
         partner = self.get_user(request.GET['partner'])
 
-        message = Message.objects.filter(
+        messages = Message.objects.filter(
             (Q(sender=user.id) & Q(receiver=partner)) |
             (Q(sender=partner) & Q(receiver=user.id))
         )
 
-        serializer =MessageSerializer(message, many=True)
+        my_unread_messages = Message.objects.filter(Q(sender=partner) & Q(receiver=user.id))
+        for message in my_unread_messages:
+            message.is_read = True
+            message.save()
+
+        serializer =MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None):
