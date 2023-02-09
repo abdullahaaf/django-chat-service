@@ -2,10 +2,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+
 from django.http import Http404
+from django.db.models import Q
+from django.contrib.auth.models import User
 
 from .models import Message
-from django.contrib.auth.models import User
 
 from .serializers import UserSerializer, MessageSerializer
 
@@ -17,7 +19,7 @@ class UserList(APIView):
         serializer = UserSerializer(user, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class Message(APIView):
+class MessageHandler(APIView):
     permission_classes = [IsAuthenticated]
 
     def get_user(self, username):
@@ -26,12 +28,22 @@ class Message(APIView):
         except User.DoesNotExist:
             raise Http404
 
+    def get(self, request):
+        user = self.get_user(request.user.username)
+        partner = self.get_user(request.GET['partner'])
+
+        message = Message.objects.filter(
+            (Q(sender=user.id) & Q(receiver=partner)) |
+            (Q(sender=partner) & Q(receiver=user.id))
+        )
+
+        serializer =MessageSerializer(message, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def post(self, request, format=None):
-        sender = self.get_user(request.user.username)
-        receiver = self.get_user(request.data.get('receiver'))
         message_data = {
-            'sender' : sender.id,
-            'receiver': receiver.id,
+            'sender' : request.user.username,
+            'receiver': request.data.get('receiver'),
             'message' : request.data.get('message')
         }
 
