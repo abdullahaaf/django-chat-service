@@ -9,8 +9,8 @@ current_unix_time = int(round(time.time() * 1000))
 class Message(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sender')
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='receiver')
-    message = models.CharField(max_length=1200)
-    timestamp = models.IntegerField(default=current_unix_time)
+    message = models.TextField()
+    timestamp = models.BigIntegerField(default=current_unix_time)
     is_read = models.BooleanField(default=False)
 
     def __str__(self):
