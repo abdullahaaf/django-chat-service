@@ -16,3 +16,7 @@ class Message(models.Model):
     class Meta:
         ordering = ('timestamp',)
 
+class ChatRooms(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_1')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_2')
+
