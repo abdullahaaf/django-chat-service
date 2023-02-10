@@ -14,6 +14,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     sender = serializers.SlugRelatedField(many=False, slug_field='username', queryset=User.objects.all())
     receiver = serializers.SlugRelatedField(many=False, slug_field='username', queryset=User.objects.all())
+    previous = serializers.SlugRelatedField(many=False, slug_field='message', queryset=Message.objects.all())
     class Meta:
         model = Message
-        fields = ['sender','receiver','message','timestamp','is_read']
+        fields = ['sender','receiver','message','timestamp','is_read','previous']

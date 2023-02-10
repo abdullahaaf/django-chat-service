@@ -1,3 +1,5 @@
+import time
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -28,6 +30,12 @@ class MessageHandler(APIView):
         except User.DoesNotExist:
             raise Http404
 
+    def get_specific_text_message(self, timestamp):
+        try:
+            return Message.objects.get(timestamp=timestamp)
+        except Message.DoesNotExist:
+            raise Http404
+
     def get(self, request):
         user = self.get_user(request.user.username)
         partner = self.get_user(request.GET['partner'])
@@ -46,10 +54,19 @@ class MessageHandler(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, format=None):
+        current_unix_time = int(round(time.time() * 1000))
+        if request.data.get('replied_timestamp') == None:
+            previous = None
+        else:
+            previous = self.get_specific_text_message(request.data.get('replied_timestamp'))
+            previous = previous.id
+
         message_data = {
             'sender' : request.user.username,
             'receiver': request.data.get('receiver'),
-            'message' : request.data.get('message')
+            'message' : request.data.get('message'),
+            'timestamp' : current_unix_time,
+            'previous' : previous
         }
 
         serializer = MessageSerializer(data=message_data)
