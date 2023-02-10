@@ -92,7 +92,26 @@ class ChatRoomList(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, format=None):
+        list_chat_room = []
         chat_rooms = ChatRooms.objects.filter(Q(sender=request.user.id) | Q(receiver=request.user.id))
-        serializer = ChatRoomSerializer(chat_rooms, many=True)
+        for chat in chat_rooms:
+            messages = Message.objects.filter(
+                (Q(sender=chat.sender.id) & Q(receiver=chat.receiver.id)) |
+                (Q(sender=chat.receiver.id) & Q(receiver=chat.sender.id))
+            ).only('message').order_by('-timestamp').first()
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            unread_chat = Message.objects.filter(
+                (Q(sender=chat.sender.id) & Q(receiver=chat.receiver.id)) |
+                (Q(sender=chat.receiver.id) & Q(receiver=chat.sender.id))
+            ).filter(Q(is_read=False))
+            count_unread_chat = len(unread_chat)
+
+            chat_room_data = {
+                'user_1' : chat.sender.username,
+                'user_2' : chat.receiver.username,
+                'last_message' : messages.message,
+                'unread_message' : count_unread_chat
+            }
+            list_chat_room.append(chat_room_data)
+
+        return Response(list_chat_room, status=status.HTTP_200_OK)
