@@ -3,6 +3,7 @@ services:
   db:
     image: postgres
     restart: always
+    container_name: db
     ports:
       - 5432:5432
     environment:
@@ -16,13 +17,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    command: bash -c "pythona manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     networks:
       - chatservicenetworks
     depends_on:
       - db
     links:
-      - db
+      - db:db
 
 networks:
   chatservicenetworks:
-    name: chatservicenetworks
+    driver: bridge
