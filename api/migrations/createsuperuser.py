@@ -1,5 +1,6 @@
 from decouple import config
 from django.db import migrations
+from django.utils import timezone
 
 class Migration(migrations.Migration):
 
@@ -13,8 +14,8 @@ class Migration(migrations.Migration):
         DJANGO_SU_NAME = config('SUUSERNAME')
         DJANGO_SU_EMAIL = config('SUEMAIL')
         DJANGO_SU_PASSWORD = config('SUPASSWORD')
-        DJANGO_FIRST_NAME = config('FIRST_NAME'),
-        DJANGO_LAST_NAME = config('LAST_NAME'),
+        DJANGO_FIRST_NAME = config('FIRST_NAME')
+        DJANGO_LAST_NAME = config('LAST_NAME')
 
         superuser = User.objects.create_superuser(
             username=DJANGO_SU_NAME,
@@ -24,7 +25,8 @@ class Migration(migrations.Migration):
             is_staff=True,
             is_active=True,
             email=DJANGO_SU_EMAIL,
-            password=DJANGO_SU_PASSWORD)
+            password=DJANGO_SU_PASSWORD,
+            last_login=timezone.now())
 
         superuser.save()
 

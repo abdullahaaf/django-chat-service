@@ -1,17 +1,15 @@
 import time
 
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 
-from django.http import Http404
 from django.db.models import Q
 from django.contrib.auth.models import User
 
 from .models import Message,ChatRooms
-
 from .serializers import MessageSerializer, ChatRoomSerializer
+from .response_helper import response_success, response_error
 
 class MessageHandler(APIView):
     permission_classes = [IsAuthenticated]
@@ -20,13 +18,13 @@ class MessageHandler(APIView):
         try:
             return User.objects.get(username=username)
         except User.DoesNotExist:
-            raise Http404
+            return response_success("user isn't exist",{},status.HTTP_204_NO_CONTENT)
 
     def get_specific_text_message(self, timestamp):
         try:
             return Message.objects.get(timestamp=timestamp)
         except Message.DoesNotExist:
-            raise Http404
+            return response_success("message isn't exist",{},status.HTTP_204_NO_CONTENT)
 
     def save_chat_room(self, data):
         sender = self.get_user(data['sender'])
@@ -48,13 +46,16 @@ class MessageHandler(APIView):
             (Q(sender=partner) & Q(receiver=user.id))
         )
 
+        if len(messages) < 1:
+            return response_success("message isn't exist",{},status.HTTP_204_NO_CONTENT)
+
         my_unread_messages = Message.objects.filter(Q(sender=partner) & Q(receiver=user.id))
         for message in my_unread_messages:
             message.is_read = True
             message.save()
 
         serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return response_success("success get data",serializer.data, status.HTTP_200_OK)
 
     def post(self, request, format=None):
 
@@ -78,15 +79,9 @@ class MessageHandler(APIView):
         if serializer.is_valid():
             self.save_chat_room(message_data)
             serializer.save()
+            return response_success("success sent message",serializer.data,status.HTTP_201_CREATED)
 
-            return Response({
-                "message": "Success sent message",
-                "data" : serializer.data
-            }, status=status.HTTP_201_CREATED)
-
-        return Response({
-            'error': serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return response_error("something went wrong",serializer.errors,status.HTTP_400_BAD_REQUEST)
 
 class ChatRoomList(APIView):
     permission_classes = [IsAuthenticated]
@@ -114,4 +109,7 @@ class ChatRoomList(APIView):
             }
             list_chat_room.append(chat_room_data)
 
-        return Response(list_chat_room, status=status.HTTP_200_OK)
+        if len(list_chat_room) < 1:
+            return response_success("no chat room available",list_chat_room,status.HTTP_204_NO_CONTENT)
+        else:
+            return response_success("success get list chat rooms",list_chat_room,status.HTTP_200_OK)
