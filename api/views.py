@@ -1,7 +1,7 @@
 import time
 
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework import status
 
 from django.db.models import Q
@@ -10,6 +10,20 @@ from django.contrib.auth.models import User
 from .models import Message,ChatRooms
 from .serializers import MessageSerializer, ChatRoomSerializer
 from .response_helper import response_success, response_error
+
+class RegisterApi(APIView):
+    permission_classes = (AllowAny,)
+
+    def post(self, request):
+        user = User.objects.create_user(
+            username=request.data.get('username'),
+            email=request.data.get('email'),
+            password=request.data.get('password')
+        )
+        user.save()
+        request.data.pop('password')
+
+        return response_success("success register", request.data, status.HTTP_201_CREATED)
 
 class MessageHandler(APIView):
     permission_classes = [IsAuthenticated]
